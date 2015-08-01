@@ -44,6 +44,27 @@ These additional steps are required for Windows:
     conda install mingw libpython
 
 
+Opt: Additional step to display the graphics
+++++++++++++++++++++++++++++++++++++++++++++
+
+  $ conda install pydot
+
+Under Ubuntu/Debian:
+
+  $ sudo apt-get install graphviz
+
+Under Fedora, Cent OS, Red Hat Enterprise:
+
+  $ sudo yum install graphviz
+
+Under Mac:
+
+  Download graphviz from: http://www.graphviz.org/Download_macos.php
+
+Under Windows:
+
+  Download graphvix from: http://www.graphviz.org/Download_windows.php
+
 Optional: MKL Blas
 ++++++++++++++++++
 
