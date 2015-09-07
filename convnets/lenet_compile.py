@@ -1,26 +1,16 @@
-"""This tutorial introduces the LeNet5 neural network architecture
-using Theano.  LeNet5 is a convolutional neural network, good for
-classifying images. This tutorial shows how to build the architecture,
-and comes with all the hyper-parameters you need to reproduce the
-paper's MNIST results.
+"""This file is only here to speed up the execution of lenet.ipynb.
 
+It contains a subset of the code defined in lenet.ipynb, in particular
+the code compiling Theano function.  Executing this script first will
+populate the cache of compiled C code, which will make subsequent
+compilations faster.
 
-This implementation simplifies the model in the following ways:
-
- - LeNetConvPool doesn't implement location-specific gain and bias parameters
- - LeNetConvPool doesn't implement pooling by average, it implements pooling
-   by max.
- - Digit classification is implemented with a logistic regression rather than
-   an RBF network
- - LeNet5 was not fully-connected convolutions at second layer
-
-References:
- - Y. LeCun, L. Bottou, Y. Bengio and P. Haffner:
-   Gradient-Based Learning Applied to Document
-   Recognition, Proceedings of the IEEE, 86(11):2278-2324, November 1998.
-   http://yann.lecun.com/exdb/publis/pdf/lecun-98.pdf
+The use case is to run this script in the background when a demo VM
+such as the one for NVIDIA's qwikLABS, so that the compilation phase
+started from the notebook is faster.
 
 """
+
 from __future__ import print_function
 import sys
 import time
@@ -158,7 +148,7 @@ def evaluate_lenet5(train, test, valid,
     ######################
     # BUILD ACTUAL MODEL #
     ######################
-    print '... building the model'
+    print('... building the model')
 
     # Construct the first convolutional pooling layer:
     # filtering reduces the image size to (28-5+1 , 28-5+1) = (24, 24)
@@ -238,85 +228,12 @@ def evaluate_lenet5(train, test, valid,
         updates=updates
     )
 
-    ###############
-    # TRAIN MODEL #
-    ###############
-    print '... training'
-    # early-stopping parameters
-    patience = 10000  # look as this many examples regardless
-    patience_increase = 2  # wait this much longer when a new best is found
+from fuel.datasets import MNIST
+train = MNIST(which_sets=('train',), subset=slice(0, 50000))
+valid = MNIST(which_sets=('train',), subset=slice(50000, 60000))
+test = MNIST(which_sets=('test',))
 
-    # a relative improvement of this much is considered significant
-    improvement_threshold = 0.995
-
-    n_train_batches = (train.num_examples + batch_size - 1) // batch_size
-
-    # go through this many minibatches before checking the network on
-    # the validation set; in this case we check every epoch
-    validation_frequency = min(n_train_batches, patience / 2)
-
-    best_validation_loss = numpy.inf
-    best_iter = 0
-    test_score = 0.
-    start_time = time.clock()
-
-    epoch = 0
-    iter = 0
-    done_looping = False
-
-    while (epoch < n_epochs) and (not done_looping):
-        epoch = epoch + 1
-
-        minibatch_index = 0
-        for minibatch in train_stream.get_epoch_iterator():
-            iter += 1
-            minibatch_index += 1
-            if iter % 100 == 0:
-                print 'training @ iter = ', iter
-
-            error = train_model(minibatch[0], minibatch[1])
-
-            if (iter + 1) % validation_frequency == 0:
-
-                # compute zero-one loss on validation set
-                validation_losses = [validate_model(vb[0], vb[1]) for vb
-                                     in valid_stream.get_epoch_iterator()]
-                this_validation_loss = numpy.mean(validation_losses)
-                print('epoch %i, minibatch %i/%i, validation error %f %%' %
-                      (epoch, minibatch_index + 1, n_train_batches,
-                       this_validation_loss * 100.))
-
-                # if we got the best validation score until now
-                if this_validation_loss < best_validation_loss:
-
-                    # improve patience if loss improvement is good enough
-                    if this_validation_loss < best_validation_loss * \
-                       improvement_threshold:
-                        patience = max(patience, iter * patience_increase)
-
-                    # save best validation score and iteration number
-                    best_validation_loss = this_validation_loss
-                    best_iter = iter
-
-                    # test it on the test set
-                    test_losses = [
-                        test_model(tb[0], tb[1])
-                        for tb in test_stream.get_epoch_iterator()
-                    ]
-                    test_score = numpy.mean(test_losses)
-                    print(('     epoch %i, minibatch %i/%i, test error of '
-                           'best model %f %%') %
-                          (epoch, minibatch_index + 1, n_train_batches,
-                           test_score * 100.))
-
-            if patience <= iter:
-                done_looping = True
-                break
-
-    end_time = time.clock()
-    print('Optimization complete.')
-    print('Best validation score of %f %% obtained at iteration %i, '
-          'with test performance %f %%' %
-          (best_validation_loss * 100., best_iter + 1, test_score * 100.))
-    print('The code ran for %.2fm' % ((end_time - start_time) / 60.),
-          file=sys.stderr)
+evaluate_lenet5(
+    train, test, valid,
+    learning_rate=0.1, n_epochs=1,
+    nkerns=[10, 25], batch_size=150)
